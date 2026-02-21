@@ -181,7 +181,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global State (Defaults to 8 students for the specific request)
+        // Global State (8 students default for the small resource classroom)
         const appState = {
             userId: null, isAuthReady: false, activeTool: 'lunchChoice',
             students: [], lunchColumns: null,
@@ -476,16 +476,16 @@
                 <div class="h-full flex flex-col overflow-hidden relative">
                     
                     <!-- Top Space Dashboard (Date & Sides) -->
-                    <div class="flex items-stretch border-b-2 border-comet-neonBlue/30 bg-black/60 backdrop-blur-md flex-shrink-0 min-h-[100px]">
+                    <div class="flex items-stretch border-b-2 border-white/10 bg-black/40 backdrop-blur-sm flex-shrink-0 min-h-[80px]">
                         
                         <!-- Date Block -->
                         <div class="flex items-center gap-4 px-6 border-r-2 border-white/10 min-w-max">
                             <button onclick="window.changeMenuDate(-1)" class="w-12 h-12 rounded-full bg-white/5 border border-white/20 flex items-center justify-center hover:bg-white/10 hover:shadow-neon-blue text-white transition-all"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
                             
-                            <div class="flex flex-col items-center px-6 w-40 md:w-48">
-                                <div class="font-black text-comet-yellow text-lg md:text-xl uppercase tracking-widest leading-none">${monthName}</div>
-                                <div class="font-display text-5xl md:text-6xl text-white leading-none drop-shadow-md my-2">${dateNum}</div>
-                                <div class="font-bold text-comet-neonBlue text-sm md:text-base uppercase tracking-widest">${dayName}</div>
+                            <div class="flex flex-col items-center px-4 py-1">
+                                <div class="font-black text-neon-blue text-sm uppercase tracking-widest leading-none">${monthName}</div>
+                                <div class="font-display text-4xl text-white leading-none drop-shadow-md">${dateNum}</div>
+                                <div class="font-bold text-slate-400 text-xs uppercase tracking-widest mt-1">${dayName}</div>
                             </div>
 
                             <button onclick="window.changeMenuDate(1)" class="w-12 h-12 rounded-full bg-white/5 border border-white/20 flex items-center justify-center hover:bg-white/10 hover:shadow-neon-blue text-white transition-all"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
