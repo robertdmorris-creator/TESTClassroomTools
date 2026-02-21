@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Classroom Tools: Arcade Edition</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                        display: ['"Fredoka One"', 'cursive'],
+                    },
+                    colors: {
+                        arcade: {
+                            blue: '#3b82f6',
+                            yellow: '#ffde00',
+                            red: '#ff3b30',
+                            green: '#34c759',
+                            purple: '#af52de',
+                            orange: '#ff9500',
+                            pink: '#ff2d55',
+                            dark: '#1c1c1e',
+                            paper: '#ffffff',
+                        }
+                    },
+                    boxShadow: {
+                        'brutal': '8px 8px 0px 0px #000000',
+                        'brutal-sm': '4px 4px 0px 0px #000000',
+                        'brutal-hover': '12px 12px 0px 0px #000000',
+                        'brutal-active': '0px 0px 0px 0px #000000',
+                        'brutal-white': '8px 8px 0px 0px #ffffff',
+                    },
+                    animation: {
+                        'spin-slow': 'spin 60s linear infinite',
+                        'pop-in': 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'float': 'float 3s ease-in-out infinite',
+                        'marquee': 'marquee 25s linear infinite',
+                        'blink': 'blink 4s infinite',
+                    },
+                    keyframes: {
+                        popIn: {
+                            '0%': { transform: 'scale(0.5) translateY(50px)', opacity: '0' },
+                            '100%': { transform: 'scale(1) translateY(0)', opacity: '1' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        marquee: {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(-50%)' },
+                        },
+                        blink: {
+                            '0%, 96%, 98%, 100%': { transform: 'scaleY(1)' },
+                            '97%, 99%': { transform: 'scaleY(0.1)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* The Moving Sunburst Background */
+        body {
+            background-color: #4facfe;
+            background-image: repeating-conic-gradient(from 0deg, transparent 0deg 15deg, rgba(255,255,255,0.15) 15deg 30deg);
+            background-attachment: fixed;
+            background-position: center;
+            color: #000;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Nunito', sans-serif;
+            margin: 0; padding: 0;
+            overflow: hidden;
+        }
+
+        /* Animate the background slowly */
+        body::before {
+            content: "";
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background-image: repeating-conic-gradient(from 0deg, transparent 0deg 15deg, rgba(255,255,255,0.15) 15deg 30deg);
+            animation: spin 120s linear infinite;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        #app-container:fullscreen { width: 100vw; height: 100vh; overflow: hidden; background: #4facfe; }
+
+        /* Neo-Brutalist Components */
+        .brutal-panel {
+            background: #ffffff;
+            border: 6px solid #000000;
+            border-radius: 32px;
+            box-shadow: 12px 12px 0px 0px #000000;
+        }
+
+        .btn-brutal {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #ffffff;
+            border: 4px solid #000000;
+            box-shadow: 6px 6px 0px 0px #000000;
+            transform: translate(0px, 0px);
+        }
+        .btn-brutal:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 8px 8px 0px 0px #000000;
+        }
+        .btn-brutal:active {
+            transform: translate(6px, 6px);
+            box-shadow: 0px 0px 0px 0px #000000;
+        }
+
+        /* Mac OS Style Dock */
+        .dock-container {
+            display: flex; gap: 16px; padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 6px solid #000; border-radius: 40px;
+            box-shadow: 8px 8px 0px #000;
+            backdrop-filter: blur(10px);
+            margin-bottom: 12px;
+        }
+        .dock-item {
+            display: flex; flex-direction: column; items-center; justify-center;
+            width: 70px; height: 70px; border-radius: 20px;
+            border: 4px solid #000; box-shadow: 4px 4px 0px #000;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: white; cursor: pointer; position: relative;
+        }
+        .dock-item:hover {
+            transform: scale(1.3) translateY(-15px);
+            z-index: 50;
+            box-shadow: 6px 15px 0px rgba(0,0,0,0.2);
+        }
+        .dock-item.active { background: #ffde00; transform: scale(1.1) translateY(-5px); box-shadow: 0 0 0 transparent; }
+        .dock-item-label {
+            position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
+            background: #000; color: #fff; font-weight: 900; font-size: 16px;
+            padding: 6px 12px; border-radius: 12px; border: 3px solid #fff;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+            white-space: nowrap; font-family: 'Fredoka One', cursive;
+        }
+        .dock-item:hover .dock-item-label { opacity: 1; }
+
+        /* Draggables */
+        .draggable-item { cursor: grab; }
+        .draggable-item:active { cursor: grabbing; }
+        .dragging { opacity: 0.4; transform: scale(0.9); }
+        .touch-dragging {
+            position: fixed; z-index: 2147483647; pointer-events: none;
+            opacity: 1; transform: scale(1.15) rotate(-3deg); 
+            box-shadow: 15px 15px 0px rgba(0,0,0,0.3);
+            border-width: 6px !important;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 16px; height: 16px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-left: 4px solid #000; }
+        ::-webkit-scrollbar-thumb { background: #ffde00; border: 4px solid #000; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f97316; }
+
+        /* Striped Zone Background */
+        .bg-striped {
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(0,0,0,0.05) 20px, rgba(0,0,0,0.05) 40px);
+        }
+    </style>
+</head>
+<body class="h-screen min-h-screen antialiased flex flex-col p-3 md:p-5 gap-4">
+
+    <!-- Top HUD (Heads Up Display) -->
+    <header class="flex justify-between items-start z-20 pointer-events-none">
+        
+        <!-- App Title -->
+        <div class="pointer-events-auto flex items-center gap-4 bg-white border-[6px] border-black rounded-3xl px-6 py-3 shadow-brutal transform -rotate-2">
+            <div class="bg-arcade-blue p-2 rounded-xl border-4 border-black text-white">
+                <i data-lucide="gamepad-2" class="w-8 h-8 md:w-10 md:h-10"></i>
+            </div>
+            <h1 class="font-display text-4xl md:text-5xl text-black uppercase tracking-tight">Class<span class="text-arcade-blue">Tools</span></h1>
+        </div>
+
+        <!-- Live Clock -->
+        <div class="pointer-events-auto bg-black text-arcade-yellow border-[6px] border-white rounded-3xl px-8 py-4 shadow-brutal transform rotate-2 flex items-center justify-center min-w-[200px]">
+            <h2 id="live-clock" class="font-display text-4xl md:text-5xl tracking-widest">12:00 PM</h2>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-grow relative z-10 flex flex-col items-center justify-center">
+        <!-- The Active Tool lives inside here -->
+        <div id="tool-display" class="w-full h-full brutal-panel flex flex-col overflow-hidden relative bg-[#f8fafc]">
+            <!-- Loading State -->
+            <div class="flex flex-col items-center justify-center h-full">
+                <i data-lucide="loader" class="w-24 h-24 animate-spin text-arcade-blue mb-6"></i>
+                <h2 class="text-6xl font-display text-black">Booting Up...</h2>
+            </div>
+        </div>
+    </main>
+
+    <!-- The Magical Dock Navigation -->
+    <footer class="flex justify-center z-50">
+        <nav id="tool-nav" class="dock-container"></nav>
+        
+        <!-- Fullscreen Button detached from dock -->
+        <button id="fullscreen-btn" class="ml-4 w-[70px] h-[70px] rounded-[20px] bg-white border-4 border-black flex items-center justify-center shadow-brutal-sm hover:scale-110 transition-transform active:translate-y-2 active:shadow-none mb-12 self-end">
+            <i data-lucide="maximize" class="w-8 h-8 text-black"></i>
+        </button>
+    </footer>
+
+    <!-- Global Modal Overlay -->
+    <div id="modal-container" class="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global State
+        const appState = {
+            userId: null, isAuthReady: false, activeTool: 'lunchChoice',
+            students: [], lunchColumns: null,
+            lunchMenu: { choice1: null, choice2: null, _date: null },
+            currentMenuDate: '2026-02-02',
+            bracket: null, podium: null, emojiMap: {},
+            timerInterval: null, audioContext: null, audioStream: null 
+        };
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "DEMO", projectId: "DEMO" };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'classroom-tools-sb';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const toolDisplay = document.getElementById('tool-display');
+        const toolNav = document.getElementById('tool-nav');
+
+        // Live Clock Logic
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('live-clock').innerText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        }, 1000);
+        
+        // The Massive Emoji Library
+        const AVATARS = [
+            '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔',
+            '😀','😁','😂','🤣','😃','😄','😅','😆','😉','😊','😋','😎','😍','🥰','😗','😙','😚','🙂','🤗','🤩','🤔','🤨','😐','😑','😶','🙄','😏','😣','😥','😮','🤐','😯','😪','😫','🥱','😴','😌','😛','😜','😝','🤤','😒','😓','😔','😕','🙃','🤑','😲','☹️','🙁','😖','😞','😟','😤','😢','😭','😦','😧','😨','😩','🤯','😬','😰','😱','🥵','🥶','😳','🤪','😵','😡','😠','🤬','😷','🤒','🤕','🤢','🤮','🤧','😇','🥳','🥺','🤠','🤡','🤥','🤫','🤭','🧐','🤓','😈','👿','👹','👺','💀','☠️','👻','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾',
+            '☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','⛄','🌬️','💨','🌪️','🌫️','🌈','☔','⚡','⭐','🌟','💫','✨','☄️','🪐','🌍','🌎','🌏','🌌','🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘','🌙','🌚','🌛','🌜','🌝','🌞','🌲','🌳','🌴','🌵','🌾','🌿','☘️','🍀','🍁','🍂','🍃','🍄','🌰',
+            '⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍','🏏','🪃','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥌','🎿','⛷️','🏂','🪂','🏋️','🤼','🤸','⛹️','🤺','🤾','🏌️','🏇','🧘','🏄','🏊','🤽','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖️','🏵️','🎗️','🎫','🎟️','🎪','🤹','🎭','🩰','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🪘','🎷','🎺','🪗','🎸','🪕','🎻','🎲','♟️','🎯','🎳','🎮','🎰','🧩','🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜','🛴','🚲','🛵','🏍️','🚨','🚔','🚍','🚘','🚖','🚡','🚠','🚟','🚃','🚋','🚞','🚝','🚄','🚅','🚈','🚂','🚆','🚇','🚊','🚉','✈️','🛫','🛬','🛩️','🚀','🛸','🚁','🛶','⛵','🚤','🛥️','🛳️','⛴️','🚢','⚓','🪝','⛽','🚧','🚦','🚥','🚏','🗺️','🗿','🗽','🗼','🏰','🏯','🏟️','🎡','🎢','🎠','⛲','⛱️','🏖️','🏝️','🏜️','🌋','⛰️','🏔️','🗻','🏕️','⛺','🛖','🏠','🏡','🏘️','🏚️','🏗️','🏭','🏢','🏬','🏣','🏤','🏥','🏦','🏨','🏪','🏫','🏩','💒','🏛️','⛪','🕌','🕍','🛕','🕋','⛩️'
+        ];
+        
+        const SCHOOL_MENU = {
+            '2026-01-05': { c1: 'Popcorn Chicken', c2: 'Hamburger', sides: ['Seasoned Corn', 'Broccoli Dippers', 'Fruit'] },
+            '2026-01-06': { c1: 'Soft Beefy Taco', c2: 'Mexican Pizza', sides: ['Refried Beans', 'Lettuce/Tomato', 'Fruit'] },
+            '2026-01-07': { c1: 'Grilled Cheese', c2: 'PBJ Uncrustable', sides: ['Chili Bowl', 'Baked Potato', 'Baby Carrots'] },
+            '2026-01-08': { c1: 'Stuffed Breadsticks', c2: 'Steak Sandwich', sides: ['Broccoli & Cheese', 'Tossed Salad', 'Fruit'] },
+            '2026-01-09': { c1: 'Chicken Filet Sandwich', c2: 'BBQ Sandwich', sides: ['Tater Tots', 'Baby Carrots', 'Fruit'] },
+            '2026-01-12': { c1: 'Chicken & Waffles', c2: 'Yogurt & Muffin', sides: ['Broccoli Dippers', 'Tossed Salad', 'Fruit'] },
+            '2026-01-13': { c1: 'French Bread Pizza', c2: 'Spicy Chicken', sides: ['Seasoned Carrots', 'Lettuce/Tomato', 'Fruit'] },
+            '2026-01-14': { c1: 'Pasta w/meatsauce', c2: 'Grilled Cheese', sides: ['Steamed Broccoli', 'Seasoned Corn', 'Fruit'] },
+            '2026-01-15': { c1: 'Chicken Biscuit', c2: 'Sausage Biscuit', sides: ['Sweet Potato', 'Smiles', 'Fruit'] },
+            '2026-01-16': { c1: 'Hotdog', c2: 'Hamburger', sides: ['Baked Beans', 'Coleslaw', 'Fruit'] },
+            '2026-01-20': { c1: 'Chicken Sandwich', c2: 'Hamburger', sides: ['Lettuce/Tomato', 'Baked Beans', 'Fruit'] },
+            '2026-01-21': { c1: 'Steak Sticks w/gravy', c2: 'PBJ Uncrustable', sides: ['Mashed Potatoes', 'Broccoli Dippers', 'Fruit'] },
+            '2026-01-22': { c1: 'Chicken Tenders', c2: 'Corndog', sides: ['Pinto Beans', 'Celery & Carrots', 'Fruit'] },
+            '2026-01-26': { c1: 'Popcorn Chicken', c2: 'Hamburger', sides: ['Seasoned Corn', 'Broccoli Dippers', 'Fruit'] },
+            '2026-01-27': { c1: 'Soft Beefy Taco', c2: 'Cheese Quesadilla', sides: ['Refried Beans', 'Lettuce/Tomato', 'Fruit'] },
+            '2026-01-28': { c1: 'Grilled Cheese', c2: 'PBJ Uncrustable', sides: ['Chili Bowl', 'Baked Potato', 'Baby Carrots'] },
+            '2026-01-29': { c1: 'Stuffed Breadsticks', c2: 'Ham & Cheese Deli', sides: ['Broccoli & Cheese', 'Tossed Salad', 'Fruit'] },
+            '2026-01-30': { c1: 'Chicken Filet Sandwich', c2: 'BBQ Sandwich', sides: ['Tater Tots', 'Baby Carrots', 'Fruit'] },
+            '2026-02-02': { c1: 'Chicken & Waffles', c2: 'Yogurt & Muffin', sides: ['Broccoli Dippers', 'Tossed Salad', 'Fruit'] },
+            '2026-02-03': { c1: 'French Bread Pizza', c2: 'Chicken Sandwich', sides: ['Seasoned Carrots', 'Lettuce/Tomato', 'Fruit'] },
+            '2026-02-04': { c1: 'Pasta w/meatsauce', c2: 'Grilled Cheese', sides: ['Steamed Broccoli', 'Seasoned Corn', 'Fruit'] },
+            '2026-02-05': { c1: 'Chicken Biscuit', c2: 'Sausage Biscuit', sides: ['Baby Carrots', 'Smiles', 'Fruit'] },
+            '2026-02-06': { c1: 'Hotdog', c2: 'Hamburger', sides: ['Baked Beans', 'Coleslaw', 'Fruit'] },
+            '2026-02-09': { c1: 'Pepperoni Pizza', c2: 'Oven Fried Chicken', sides: ['Tossed Salad', 'Seasoned Corn', 'Fruit'] },
+            '2026-02-10': { c1: 'Popcorn Chicken', c2: 'Ham & Cheese Wrap', sides: ['Greenbeans', 'Baby Carrots', 'Fruit'] },
+            '2026-02-11': { c1: 'Chicken Filet Sandwich', c2: 'Hamburger', sides: ['Baked Beans', 'Lettuce/Tomato', 'Fruit'] },
+            '2026-02-12': { c1: 'Steak Sticks w/gravy', c2: 'PBJ Uncrustable', sides: ['Mashed Potatoes', 'Broccoli w/dip', 'Fruit'] },
+            '2026-02-13': { c1: 'Chicken Tenders', c2: 'Corndog', sides: ['Pinto Beans', 'Celery & Carrots', 'Fruit'] },
+            '2026-02-17': { c1: 'Soft Beefy Taco', c2: 'Mexican Pizza', sides: ['Refried Beans', 'Lettuce/Tomato', 'Baby Carrots'] },
+            '2026-02-18': { c1: 'Grilled Cheese', c2: 'PBJ Uncrustable', sides: ['Chili Bowl', 'Baked Potato Half', 'Fruit'] },
+            '2026-02-19': { c1: 'Pizza Sticks', c2: 'Hot Ham & Cheese', sides: ['Broccoli & Cheese', 'Tossed Salad', 'Fruit'] },
+            '2026-02-20': { c1: 'Chicken Filet Sandwich', c2: 'BBQ Sandwich', sides: ['Tater Tots', 'Baby Carrots', 'Fruit'] },
+            '2026-02-23': { c1: 'Chicken & Waffles', c2: 'Yogurt & Muffin', sides: ['Broccoli Dippers', 'Tossed Salad', 'Fruit'] },
+            '2026-02-24': { c1: 'French Bread Pizza', c2: 'Chicken Sandwich', sides: ['Seasoned Carrots', 'Lettuce/Tomato', 'Fruit'] },
+            '2026-02-25': { c1: 'Pasta w/meatsauce', c2: 'Grilled Cheese', sides: ['Steamed Broccoli', 'Seasoned Corn', 'Fruit'] },
+            '2026-02-26': { c1: 'Chicken Biscuit', c2: 'Sausage Biscuit', sides: ['Sweet Potato', 'Smiles', 'Fruit'] },
+            '2026-02-27': { c1: 'Hotdog', c2: 'Hamburger', sides: ['Baked Beans', 'Coleslaw', 'Fruit'] }
+        };
+        const DATES = Object.keys(SCHOOL_MENU).sort();
+
+        function getFoodEmoji(name) {
+            const n = name.toLowerCase();
+            if (n.includes('pizza') || n.includes('breadsticks')) return '🍕';
+            if (n.includes('waffle')) return '🧇';
+            if (n.includes('pasta') || n.includes('spaghetti')) return '🍝';
+            if (n.includes('taco') || n.includes('quesadilla')) return '🌮';
+            if (n.includes('cheese') && (n.includes('sandwich') || n.includes('grilled'))) return '🥪';
+            if (n.includes('sandwich') || n.includes('wrap') || n.includes('uncrustable')) return '🥪';
+            if (n.includes('burger')) return '🍔';
+            if (n.includes('hotdog') || n.includes('corndog')) return '🌭';
+            if (n.includes('chicken') || n.includes('tenders')) return '🍗';
+            if (n.includes('steak') || n.includes('bbq') || n.includes('meat')) return '🥩';
+            if (n.includes('yogurt') || n.includes('muffin')) return '🧁';
+            if (n.includes('biscuit')) return '🥐';
+            if (n.includes('cheese')) return '🧀';
+            return '🍱';
+        }
+
+        const MENU_OPTIONS = Array.from(new Set(Object.values(SCHOOL_MENU).flatMap(d => [d.c1, d.c2]))).sort().map(name => ({ name, emoji: getFoodEmoji(name) }));
+
+        function getStudentEmoji(student) {
+            if (appState.emojiMap[student.id]) return appState.emojiMap[student.id];
+            const todayStr = new Date().toDateString();
+            const seedString = student.name + todayStr;
+            let hash = 0; 
+            for (let i = 0; i < seedString.length; i++) { hash = seedString.charCodeAt(i) + ((hash << 5) - hash); }
+            const emoji = AVATARS[Math.abs(hash) % AVATARS.length];
+            appState.emojiMap[student.id] = emoji;
+            return emoji;
+        }
+
+        const tools = {
+            lunchChoice: { name: 'Lunch Board', icon: 'utensils-crossed', color: 'bg-arcade-green text-black' },
+            noiseMeter: { name: 'Quiet Critter', icon: 'mic', color: 'bg-arcade-pink text-white' },
+            timer: { name: 'Focus Timer', icon: 'timer', color: 'bg-arcade-orange text-black' },
+            classRoster: { name: 'Class Roster', icon: 'users', color: 'bg-arcade-blue text-white' },
+            studentSelector: { name: 'Random Picker', icon: 'dices', color: 'bg-arcade-purple text-white' },
+            tournamentBracket: { name: 'Tournament', icon: 'trophy', color: 'bg-arcade-yellow text-black' },
+        };
+
+        function init() {
+            renderNav(); setupFullscreen();
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    appState.userId = user.uid; appState.isAuthReady = true;
+                    await initRoster(); setupStudentListener(); renderActiveTool();
+                }
+            });
+            (async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+                    else await signInAnonymously(auth);
+                } catch (e) { fallbackToLocal(); }
+            })();
+            setTimeout(() => { if (!appState.isAuthReady) fallbackToLocal(); }, 3000);
+        }
+
+        function fallbackToLocal() {
+            if (appState.isAuthReady) return;
+            appState.isAuthReady = true;
+            appState.students = ['Skylar', 'Terrell', 'DJ', 'Joshua', 'Cody', 'Leon', 'Alisha', 'Miracle'].map((n, i) => ({ id: `loc-${i}`, name: n, isPresent: true }));
+            renderActiveTool();
+        }
+
+        async function initRoster() {
+            if (!appState.userId) return;
+            const ref = doc(db, `artifacts/${appId}/users/${appState.userId}/settings`, 'roster');
+            try {
+                const snap = await getDoc(ref);
+                if (!snap.exists() || !snap.data().initialized) {
+                    const sRef = collection(db, `artifacts/${appId}/users/${appState.userId}/students`);
+                    const defaults = ['Skylar', 'Terrell', 'DJ', 'Joshua', 'Cody', 'Leon', 'Alisha', 'Miracle'];
+                    await Promise.all(defaults.map(name => addDoc(sRef, { name, isPresent: true })));
+                    await setDoc(ref, { initialized: true });
+                }
+            } catch (e) {}
+        }
+
+        function setupStudentListener() {
+            if (!appState.userId) return;
+            onSnapshot(collection(db, `artifacts/${appId}/users/${appState.userId}/students`), (snap) => {
+                appState.students = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => a.name.localeCompare(b.name));
+                if (['classRoster', 'studentSelector', 'lunchChoice'].includes(appState.activeTool)) renderActiveTool();
+            }, () => {});
+        }
+
+        function cleanupCurrentTool() {
+            clearInterval(appState.timerInterval);
+            if(appState.audioContext) { appState.audioContext.close(); appState.audioContext = null; }
+            if(appState.audioStream) { appState.audioStream.getTracks().forEach(t => t.stop()); appState.audioStream = null; }
+        }
+
+        function renderNav() {
+            toolNav.innerHTML = '';
+            Object.entries(tools).forEach(([id, tool]) => {
+                const btn = document.createElement('div');
+                const isActive = appState.activeTool === id;
+                btn.className = `dock-item flex items-center justify-center ${isActive ? 'active' : ''}`;
+                btn.innerHTML = `
+                    <i data-lucide="${tool.icon}" class="w-8 h-8 text-black"></i>
+                    <div class="dock-item-label">${tool.name}</div>
+                `;
+                btn.onclick = () => { cleanupCurrentTool(); appState.activeTool = id; renderNav(); renderActiveTool(); };
+                toolNav.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        function renderActiveTool() {
+            if (!appState.isAuthReady) return;
+            toolDisplay.innerHTML = '';
+            const toolFunc = {
+                lunchChoice: renderLunchChoice, noiseMeter: renderNoiseMeter, timer: renderTimer,
+                classRoster: renderClassRoster, studentSelector: renderStudentSelector, tournamentBracket: renderTournamentBracket
+            }[appState.activeTool];
+            if (toolFunc) toolFunc();
+            lucide.createIcons();
+        }
+
+        function showModal(contentHtml) {
+            const modal = document.getElementById('modal-container');
+            modal.innerHTML = `
+                <div class="bg-white border-[8px] border-black rounded-[40px] p-6 md:p-10 max-w-5xl w-full transform transition-all animate-pop-in shadow-[15px_15px_0px_#000] relative bg-striped">
+                    <button id="close-modal" class="absolute -top-6 -right-6 w-14 h-14 bg-arcade-red border-4 border-black text-white rounded-full btn-brutal flex items-center justify-center hover:bg-red-600 z-50"><i data-lucide="x" class="w-8 h-8"></i></button>
+                    <div class="bg-white border-4 border-black rounded-[24px] p-6 shadow-brutal-sm">${contentHtml}</div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            document.getElementById('close-modal').onclick = () => modal.classList.add('hidden');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 1. THE REWRITTEN LUNCH CHOICE (Ultra Legible)
+        // ==========================================
+        function renderLunchChoice() {
+            const dayData = SCHOOL_MENU[appState.currentMenuDate];
+            if (!appState.lunchMenu.choice1 || appState.lunchMenu._date !== appState.currentMenuDate) {
+                appState.lunchMenu = {
+                    _date: appState.currentMenuDate,
+                    choice1: { name: dayData.c1, emoji: getFoodEmoji(dayData.c1) },
+                    choice2: { name: dayData.c2, emoji: getFoodEmoji(dayData.c2) },
+                    sides: dayData.sides
+                };
+            }
+
+            if (!appState.lunchColumns) {
+                appState.lunchColumns = { unselected: [...appState.students.filter(s => s.isPresent)], choice1: [], choice2: [], choice3: [] };
+            } else {
+                const allIds = new Set(appState.students.map(s => s.id));
+                ['unselected', 'choice1', 'choice2', 'choice3'].forEach(k => appState.lunchColumns[k] = appState.lunchColumns[k].filter(s => allIds.has(s.id)));
+                const current = new Set([...appState.lunchColumns.unselected, ...appState.lunchColumns.choice1, ...appState.lunchColumns.choice2, ...appState.lunchColumns.choice3].map(s => s.id));
+                appState.students.forEach(s => { if (s.isPresent && !current.has(s.id)) appState.lunchColumns.unselected.push(s); });
+            }
+
+            const cols = appState.lunchColumns;
+            const menu = appState.lunchMenu;
+
+            // Student Cards: Massive font, pure white background, pure black text. 
+            const makeDraggable = (student, colId) => `
+                <div id="st-${student.id}" draggable="true" data-id="${student.id}" data-col="${colId}" style="touch-action: none;"
+                     class="draggable-item bg-white border-4 border-black px-4 py-3 rounded-[20px] cursor-grab active:cursor-grabbing hover:-translate-y-2 hover:rotate-1 transition-all animate-pop-in select-none flex items-center gap-4 w-full max-w-[260px] shadow-[6px_6px_0px_#000]">
+                    <div class="text-4xl md:text-5xl pointer-events-none filter drop-shadow-sm">${getStudentEmoji(student)}</div>
+                    <div class="font-black text-2xl md:text-3xl text-black pointer-events-none truncate tracking-tight">${student.name}</div>
+                </div>`;
+
+            // Monster Stations: Huge Speech bubbles for maximum text contrast
+            const monsterTemplate = (id, bgClass, trayColor, title, items, isEditable = false) => {
+                const menuData = isEditable ? menu[id] : null;
+                const emoji = isEditable ? menuData.emoji : '🍱';
+                const label = isEditable ? menuData.name : title;
+                
+                return `
+                <div id="drop-${id}" class="dropzone group flex flex-col h-full flex-1 relative mt-20 transition-all border-l-[6px] border-black first:border-l-0">
+                    
+                    <!-- Giant White Speech Bubble for Food Text (100% Readable) -->
+                    <div class="absolute -top-[90px] left-1/2 -translate-x-1/2 w-[90%] z-30 flex flex-col items-center">
+                        ${isEditable 
+                            ? `<button onclick="window.openMenuPicker('${id}')" class="bg-white border-[5px] border-black rounded-[24px] px-6 py-4 shadow-brutal w-full hover:-translate-y-2 hover:shadow-[10px_14px_0px_#000] active:translate-y-2 active:shadow-none transition-all flex items-center justify-center gap-3 relative cursor-pointer group/btn">
+                                 <span class="text-[3.5rem] leading-none">${emoji}</span>
+                                 <span class="font-display text-2xl md:text-[2rem] text-black leading-tight text-left break-words w-full group-hover/btn:underline decoration-4 underline-offset-4">${label}</span>
+                                 <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-6 h-6 bg-white border-b-[5px] border-r-[5px] border-black transform rotate-45"></div>
+                               </button>`
+                            : `<div class="bg-white border-[5px] border-black rounded-[24px] px-6 py-4 shadow-brutal w-full flex items-center justify-center gap-3 relative">
+                                 <span class="text-[3.5rem] leading-none">${emoji}</span>
+                                 <span class="font-display text-2xl md:text-[2rem] text-black leading-tight text-center break-words w-full">${label}</span>
+                                 <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-6 h-6 bg-white border-b-[5px] border-r-[5px] border-black transform rotate-45"></div>
+                               </div>`
+                        }
+                    </div>
+
+                    <!-- Monster Face Base -->
+                    <div class="pod-head ${bgClass} h-32 md:h-40 border-b-[6px] border-black relative flex flex-col items-center justify-end pb-4 transition-transform z-20 shadow-[0_10px_20px_rgba(0,0,0,0.15)] pt-12">
+                        <!-- Huge Cartoon Eyes -->
+                        <div class="w-full flex justify-center gap-12">
+                            <div class="w-14 h-14 bg-white border-[5px] border-black rounded-full flex items-center justify-center overflow-hidden"><div class="w-6 h-6 bg-black rounded-full animate-blink"></div></div>
+                            <div class="w-14 h-14 bg-white border-[5px] border-black rounded-full flex items-center justify-center overflow-hidden"><div class="w-6 h-6 bg-black rounded-full animate-blink"></div></div>
+                        </div>
+                        <!-- Giant Mouth -->
+                        <div class="monster-mouth w-32 h-8 bg-black border-4 border-black rounded-full mt-4 shadow-inner relative overflow-hidden flex items-center justify-center">
+                            <div class="w-full h-2 bg-red-500 absolute bottom-0 rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- Tray -->
+                    <div class="flex-grow ${trayColor} relative p-5 overflow-y-auto custom-scrollbar shadow-inner bg-striped">
+                        <div class="absolute top-4 right-4 bg-white border-4 border-black w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-black text-black z-10 shadow-brutal-sm">
+                            ${items.length}
+                        </div>
+                        <div class="relative z-0 h-full flex flex-col items-center gap-4 pb-10 pt-4">
+                             ${items.map(s => makeDraggable(s, id)).join('')}
+                        </div>
+                    </div>
+                </div>
+            `};
+
+            // HUGE Calendar Widget
+            const dateObj = new Date(appState.currentMenuDate + 'T12:00:00');
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+            const monthName = dateObj.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+            const dateNum = dateObj.toLocaleDateString('en-US', { day: 'numeric' });
+
+            const sidesString = menu.sides.join(' &nbsp;•&nbsp; ');
+
+            toolDisplay.innerHTML = `
+                <div class="h-full flex flex-row overflow-hidden relative">
+                    
+                    <!-- Left: THE WAITING CLIPBOARD (Huge White Area) -->
+                    <div class="w-[30%] max-w-[340px] bg-white border-r-[6px] border-black flex flex-col z-20 shadow-[10px_0px_0px_rgba(0,0,0,0.1)]">
+                        <div class="p-6 bg-arcade-yellow border-b-[6px] border-black flex flex-col items-center justify-center gap-2 z-10 relative">
+                            <h2 class="font-display text-4xl text-black uppercase tracking-wide">Waiting</h2>
+                            <button id="reset-lunch" class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white text-arcade-red border-4 border-black rounded-xl hover:bg-arcade-red hover:text-white transition-colors shadow-brutal-sm flex items-center justify-center" title="Reset"><i data-lucide="rotate-ccw" class="w-7 h-7 font-black"></i></button>
+                        </div>
+                        <div id="drop-unselected" class="dropzone flex-grow overflow-y-auto p-5 flex flex-col gap-4 custom-scrollbar bg-slate-50">
+                            ${cols.unselected.length > 0 ? cols.unselected.map(s => makeDraggable(s, 'unselected')).join('') : 
+                              '<div class="text-center text-black font-display text-4xl mt-12 opacity-30 animate-pulse">All Done!</div>'}
+                        </div>
+                    </div>
+
+                    <!-- Right: The Serving Station -->
+                    <div class="flex-grow flex flex-col bg-transparent h-full z-10">
+                        
+                        <!-- Top Dashboard: Huge Date & Scrolling Sides -->
+                        <div class="flex flex-col border-b-[6px] border-black bg-white">
+                            
+                            <div class="flex items-stretch">
+                                <!-- Huge Calendar -->
+                                <div class="flex items-center justify-center p-6 border-r-[6px] border-black bg-slate-50 min-w-[350px]">
+                                    <button onclick="window.changeMenuDate(-1)" class="w-16 h-16 rounded-2xl bg-white border-4 border-black flex items-center justify-center shadow-brutal hover:-translate-x-2 transition-transform active:shadow-none active:translate-y-2"><i data-lucide="arrow-left" class="w-10 h-10 text-black font-black"></i></button>
+                                    
+                                    <div class="mx-6 flex flex-col items-center bg-white border-4 border-black rounded-[24px] shadow-brutal overflow-hidden transform -rotate-2">
+                                        <div class="bg-arcade-red w-full text-center py-2 border-b-4 border-black font-black text-white text-xl tracking-widest">${monthName}</div>
+                                        <div class="px-8 py-2 flex flex-col items-center">
+                                            <div class="font-display text-6xl text-black leading-none">${dateNum}</div>
+                                            <div class="font-bold text-slate-500 text-xl uppercase tracking-widest mt-1">${dayName}</div>
+                                        </div>
+                                    </div>
+
+                                    <button onclick="window.changeMenuDate(1)" class="w-16 h-16 rounded-2xl bg-white border-4 border-black flex items-center justify-center shadow-brutal hover:translate-x-2 transition-transform active:shadow-none active:translate-y-2"><i data-lucide="arrow-right" class="w-10 h-10 text-black font-black"></i></button>
+                                </div>
+
+                                <!-- Scrolling Sides Marquee -->
+                                <div class="flex-grow flex flex-col justify-center bg-arcade-dark p-6 overflow-hidden relative border-b-4 border-black">
+                                    <div class="absolute top-4 left-6 bg-arcade-yellow text-black font-black text-xl px-4 py-1 rounded-xl border-4 border-black z-10 transform -rotate-3">SIDES</div>
+                                    <div class="overflow-hidden mt-6">
+                                        <div class="inline-block whitespace-nowrap animate-marquee font-display text-4xl md:text-5xl text-white tracking-wider">
+                                            <span class="mr-20">${sidesString}</span>
+                                            <span class="mr-20">${sidesString}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- The Monster Zones -->
+                        <div class="flex flex-row flex-grow min-h-0 items-stretch bg-slate-200">
+                            ${monsterTemplate('choice1', 'bg-arcade-blue', 'bg-blue-100', 'Option A', cols.choice1, true)}
+                            ${monsterTemplate('choice2', 'bg-arcade-green', 'bg-green-100', 'Option B', cols.choice2, true)}
+                            ${monsterTemplate('choice3', 'bg-arcade-purple', 'bg-purple-100', 'Home Lunch', cols.choice3, false)}
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+
+            window.changeMenuDate = (dir) => {
+                const idx = DATES.indexOf(appState.currentMenuDate);
+                let newIdx = Math.max(0, Math.min(idx + dir, DATES.length - 1));
+                if (newIdx !== idx) {
+                    if(appState.lunchColumns && (appState.lunchColumns.choice1.length > 0 || appState.lunchColumns.choice2.length > 0 || appState.lunchColumns.choice3.length > 0)) {
+                        if(!confirm("Change date and reset the board?")) return;
+                    }
+                    appState.currentMenuDate = DATES[newIdx];
+                    appState.lunchColumns = null; renderLunchChoice();
+                }
+            };
+
+            window.openMenuPicker = (choiceId) => {
+                const optionsHtml = MENU_OPTIONS.map((opt, i) => `
+                    <button onclick="window.selectMenu('${choiceId}', ${i})" class="flex flex-col items-center justify-center p-4 bg-white border-4 border-black rounded-[20px] btn-brutal">
+                        <span class="text-6xl mb-4 transform group-hover:scale-125 transition-transform">${opt.emoji}</span>
+                        <span class="font-black text-black text-lg md:text-xl text-center leading-tight">${opt.name}</span>
+                    </button>
+                `).join('');
+                showModal(`
+                    <h3 class="text-5xl font-display text-black mb-8 text-center uppercase border-b-4 border-black pb-4">Pick a New Meal</h3>
+                    <div class="grid grid-cols-3 md:grid-cols-4 gap-6 max-h-[50vh] overflow-y-auto p-4 custom-scrollbar bg-slate-100 rounded-[20px] border-4 border-black shadow-inner">${optionsHtml}</div>
+                `);
+            };
+
+            window.selectMenu = (choiceId, optionIndex) => {
+                appState.lunchMenu[choiceId] = MENU_OPTIONS[optionIndex];
+                document.getElementById('modal-container').classList.add('hidden'); renderLunchChoice(); 
+            };
+
+            // Drag & Drop Handling (Updated visually for the heavy styling)
+            let draggedItem = null, sourceCol = null, activeTouchEl = null, originalSourceEl = null;
+            const handleDragStart = (e) => { draggedItem = e.target; sourceCol = e.target.dataset.col; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; };
+            const handleDragEnd = (e) => { if(e.target) e.target.classList.remove('dragging'); cleanupDrops(); };
+            const handleDragOver = (e) => { e.preventDefault(); const zone = e.target.closest('.dropzone'); if(zone) zone.classList.add('dropzone-active'); };
+            const handleDragLeave = (e) => { const zone = e.target.closest('.dropzone'); if(zone) zone.classList.remove('dropzone-active'); };
+            const handleDrop = (e) => { e.preventDefault(); const zone = e.target.closest('.dropzone'); if (!zone || !draggedItem) return; const tId = zone.id.replace('drop-', ''); if (tId !== sourceCol) performMove(sourceCol, tId, draggedItem.dataset.id, zone); };
+
+            const handleTouchStart = (e) => {
+                const item = e.target.closest('.draggable-item'); if (!item) return;
+                e.preventDefault(); originalSourceEl = item; sourceCol = item.dataset.col;
+                activeTouchEl = item.cloneNode(true); activeTouchEl.classList.remove('draggable-item'); activeTouchEl.classList.add('touch-dragging');
+                activeTouchEl.style.width = item.offsetWidth + 'px'; document.body.appendChild(activeTouchEl); item.style.opacity = '0.3';
+                moveTouchClone(e.touches[0]);
+            };
+            const moveTouchClone = (touch) => { if(!activeTouchEl) return; activeTouchEl.style.left = (touch.clientX - (activeTouchEl.offsetWidth/2)) + 'px'; activeTouchEl.style.top = (touch.clientY - (activeTouchEl.offsetHeight/2) - 50) + 'px'; };
+            const handleTouchMove = (e) => {
+                if (!activeTouchEl) return; e.preventDefault(); moveTouchClone(e.touches[0]);
+                document.querySelectorAll('.dropzone').forEach(d => d.classList.remove('dropzone-active'));
+                const elemBelow = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+                if(elemBelow) { const zone = elemBelow.closest('.dropzone'); if(zone) zone.classList.add('dropzone-active'); }
+            };
+            const handleTouchEnd = (e) => {
+                if (!activeTouchEl) return; e.preventDefault(); const touch = e.changedTouches[0]; const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                activeTouchEl.remove(); activeTouchEl = null; if(originalSourceEl) originalSourceEl.style.opacity = '1'; cleanupDrops();
+                if(elemBelow && originalSourceEl) { const zone = elemBelow.closest('.dropzone'); if(zone) { const tId = zone.id.replace('drop-', ''); if(tId !== sourceCol) performMove(sourceCol, tId, originalSourceEl.dataset.id, zone); } }
+            };
+
+            const cleanupDrops = () => document.querySelectorAll('.dropzone').forEach(d => { d.classList.remove('dropzone-active'); d.classList.remove('chewing'); });
+
+            const performMove = (fromCol, toCol, sId, zone) => {
+                const student = appState.lunchColumns[fromCol].find(s => s.id === sId);
+                if(student) {
+                    zone.classList.add('chewing');
+                    appState.lunchColumns[fromCol] = appState.lunchColumns[fromCol].filter(s => s.id !== sId);
+                    appState.lunchColumns[toCol].push(student);
+                    if (appState.lunchColumns.unselected.length === 0 && fromCol === 'unselected') triggerConfetti();
+                    setTimeout(renderLunchChoice, 300); 
+                }
+            };
+
+            toolDisplay.querySelectorAll('.draggable-item').forEach(el => { el.addEventListener('dragstart', handleDragStart); el.addEventListener('dragend', handleDragEnd); el.addEventListener('touchstart', handleTouchStart, {passive: false}); el.addEventListener('touchmove', handleTouchMove, {passive: false}); el.addEventListener('touchend', handleTouchEnd); });
+            toolDisplay.querySelectorAll('.dropzone').forEach(el => { el.addEventListener('dragover', handleDragOver); el.addEventListener('dragleave', handleDragLeave); el.addEventListener('drop', handleDrop); });
+
+            document.getElementById('reset-lunch').onclick = () => { appState.lunchColumns = null; renderLunchChoice(); };
+        }
+
+        // ==========================================
+        // 2. QUIET CRITTER (Redesigned)
+        // ==========================================
+        function renderNoiseMeter() {
+            let isListening = false;
+            toolDisplay.innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center p-6 text-center animate-pop-in relative bg-striped">
+                    <div class="bg-white border-8 border-black p-8 rounded-[40px] shadow-brutal flex flex-col items-center max-w-4xl w-full">
+                        <h2 class="text-6xl md:text-8xl font-display text-black mb-6 uppercase tracking-tight">Quiet Critter</h2>
+                        
+                        <div class="relative w-80 h-80 md:w-[450px] md:h-[450px] mb-12 bg-white border-[8px] border-black rounded-full shadow-[inset_0_10px_20px_rgba(0,0,0,0.2)] flex items-center justify-center overflow-hidden">
+                            <div class="absolute inset-0 bg-[radial-gradient(circle,transparent_20%,#f8fafc_20%,#f8fafc_80%,transparent_80%,transparent)] bg-[length:20px_20px] opacity-50"></div>
+                            
+                            <div id="critter-sleep" class="absolute inset-0 flex items-center justify-center transition-opacity duration-500 z-10">
+                                <div class="text-[14rem] md:text-[16rem] animate-float drop-shadow-lg">😴</div>
+                                <div class="absolute top-16 right-4 text-6xl animate-pulse text-slate-400 font-display font-black">Zzz</div>
+                            </div>
+                            <div id="critter-awake" class="absolute inset-0 flex items-center justify-center transition-opacity duration-200 opacity-0 scale-95 z-10">
+                                <div class="text-[14rem] md:text-[16rem] drop-shadow-lg">😳</div>
+                            </div>
+                            <div id="critter-angry" class="absolute inset-0 flex items-center justify-center transition-opacity duration-200 opacity-0 scale-105 z-10">
+                                <div class="text-[14rem] md:text-[16rem] animate-bounce-slow drop-shadow-lg">😫</div>
+                            </div>
+                        </div>
+
+                        <!-- Huge Volume Bar -->
+                        <div class="w-full h-20 bg-slate-200 border-[6px] border-black rounded-[24px] overflow-hidden shadow-inner relative flex">
+                            <div id="volume-fill" class="h-full bg-arcade-green w-0 transition-all duration-75 ease-out border-r-[6px] border-black"></div>
+                            <div class="absolute top-0 bottom-0 w-2 bg-black left-[75%]"></div>
+                            <div class="absolute inset-0 pointer-events-none flex items-center pl-6">
+                                <span class="font-black text-2xl text-black/50 tracking-widest uppercase">Volume Level</span>
+                            </div>
+                        </div>
+
+                        <button id="toggle-mic" class="mt-12 btn-brutal bg-arcade-pink text-white px-12 py-6 rounded-[24px] font-black text-4xl flex items-center gap-4 uppercase tracking-wider">
+                            <i data-lucide="mic" class="w-10 h-10"></i> Start Listening
+                        </button>
+                    </div>
+                </div>
+            `;
+            const btn = document.getElementById('toggle-mic');
+            const fill = document.getElementById('volume-fill');
+            const [sleepEl, awakeEl, angryEl] = ['sleep', 'awake', 'angry'].map(s => document.getElementById(`critter-${s}`));
+            let animationFrameId;
+
+            const updateCritter = (vol) => {
+                fill.style.width = Math.min(vol, 100) + '%';
+                if (vol > 75) {
+                    fill.className = 'h-full bg-arcade-red transition-all duration-75 border-r-[6px] border-black';
+                    sleepEl.style.opacity = '0'; awakeEl.style.opacity = '0'; angryEl.style.opacity = '1';
+                } else if (vol > 35) {
+                    fill.className = 'h-full bg-arcade-yellow transition-all duration-75 border-r-[6px] border-black';
+                    sleepEl.style.opacity = '0'; awakeEl.style.opacity = '1'; angryEl.style.opacity = '0';
+                } else {
+                    fill.className = 'h-full bg-arcade-green transition-all duration-75 border-r-[6px] border-black';
+                    sleepEl.style.opacity = '1'; awakeEl.style.opacity = '0'; angryEl.style.opacity = '0';
+                }
+            };
+
+            btn.onclick = async () => {
+                if (isListening) { cleanupCurrentTool(); renderNoiseMeter(); return; }
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    appState.audioStream = stream; appState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const analyser = appState.audioContext.createAnalyser(); const microphone = appState.audioContext.createMediaStreamSource(stream);
+                    analyser.smoothingTimeConstant = 0.7; analyser.fftSize = 256; microphone.connect(analyser);
+                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    const checkAudio = () => {
+                        if(!appState.audioContext) return; analyser.getByteFrequencyData(dataArray);
+                        let sum = 0; for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+                        updateCritter((sum / dataArray.length) * 2); animationFrameId = requestAnimationFrame(checkAudio);
+                    }; checkAudio();
+                    btn.innerHTML = `<i data-lucide="mic-off" class="w-10 h-10"></i> Stop Listening`;
+                    btn.className = "mt-12 btn-brutal bg-white text-arcade-red px-12 py-6 rounded-[24px] font-black text-4xl flex items-center gap-4 uppercase tracking-wider";
+                    isListening = true;
+                    lucide.createIcons();
+                } catch (err) { alert("Microphone access denied."); }
+            };
+        }
+
+        // ==========================================
+        // 3. FOCUS TIMER
+        // ==========================================
+        function renderTimer() {
+            let secondsLeft = 300, totalTime = 300, isRunning = false;
+            const formatTime = (s) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2, '0')}`;
+
+            toolDisplay.innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center p-6 bg-striped animate-pop-in">
+                    <div class="bg-white border-[8px] border-black p-12 rounded-[40px] shadow-brutal flex flex-col items-center">
+                        <h2 class="text-4xl md:text-5xl font-black text-black uppercase mb-8 tracking-widest border-b-[6px] border-black pb-4">Focus Timer</h2>
+                        
+                        <div class="relative w-[350px] h-[350px] md:w-[500px] md:h-[500px] flex items-center justify-center mb-12 bg-white rounded-full border-[10px] border-black shadow-[inset_0_10px_30px_rgba(0,0,0,0.2)]">
+                            <svg class="absolute inset-0 w-full h-full transform -rotate-90 pointer-events-none z-10">
+                                <circle id="timer-ring" cx="50%" cy="50%" r="42%" stroke="#000" stroke-width="24" fill="none" stroke-linecap="round" stroke-dasharray="1000" class="transition-all duration-1000 ease-linear" />
+                            </svg>
+                            <div class="relative z-20 text-center cursor-pointer group bg-arcade-dark rounded-full p-12 border-[8px] border-black shadow-brutal hover:scale-105 transition-transform" onclick="window.showTimerSettings()">
+                                <div id="time-display" class="font-display text-7xl md:text-[9rem] text-arcade-yellow tracking-tighter tabular-nums leading-none">${formatTime(secondsLeft)}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-8 items-center bg-slate-100 p-6 rounded-[30px] border-[6px] border-black shadow-brutal-sm">
+                            <button onclick="window.addTime(-60)" class="w-20 h-20 rounded-[20px] bg-white text-black font-black text-4xl btn-brutal">-1</button>
+                            <button id="timer-toggle" class="btn-brutal bg-arcade-green text-black w-32 h-32 rounded-full flex items-center justify-center transform scale-110 border-[6px] border-black">
+                                <i data-lucide="play" class="w-14 h-14 fill-current ml-2"></i>
+                            </button>
+                            <button onclick="window.addTime(60)" class="w-20 h-20 rounded-[20px] bg-white text-black font-black text-4xl btn-brutal">+1</button>
+                        </div>
+                        <button onclick="window.resetTimer()" class="mt-10 font-black text-2xl text-slate-500 hover:text-black uppercase tracking-widest underline decoration-4 underline-offset-8">Reset Timer</button>
+                    </div>
+                </div>
+            `;
+
+            const ring = document.getElementById('timer-ring');
+            const display = document.getElementById('time-display');
+            const toggleBtn = document.getElementById('timer-toggle');
+            ring.setAttribute("pathLength", "100");
+
+            const updateUI = () => {
+                display.innerText = formatTime(secondsLeft);
+                const pct = totalTime > 0 ? (secondsLeft / totalTime) * 100 : 0;
+                ring.style.strokeDashoffset = 100 - pct;
+                ring.setAttribute('stroke', pct < 20 ? '#ff3b30' : pct < 50 ? '#ff9500' : '#34c759');
+            };
+
+            const tick = () => {
+                if (secondsLeft > 0) { secondsLeft--; updateUI(); } 
+                else {
+                    clearInterval(appState.timerInterval); isRunning = false;
+                    toggleBtn.innerHTML = `<i data-lucide="rotate-ccw" class="w-14 h-14"></i>`;
+                    toggleBtn.className = "btn-brutal bg-black text-white w-32 h-32 rounded-full flex items-center justify-center transform scale-110 border-[6px] border-white animate-pulse";
+                    triggerConfetti(); lucide.createIcons();
+                }
+            };
+
+            toggleBtn.onclick = () => {
+                if (isRunning) {
+                    clearInterval(appState.timerInterval); isRunning = false;
+                    toggleBtn.innerHTML = `<i data-lucide="play" class="w-14 h-14 fill-current ml-2"></i>`;
+                    toggleBtn.className = "btn-brutal bg-arcade-green text-black w-32 h-32 rounded-full flex items-center justify-center transform scale-110 border-[6px] border-black";
+                } else {
+                    if (secondsLeft === 0) { secondsLeft = totalTime || 300; }
+                    appState.timerInterval = setInterval(tick, 1000); isRunning = true;
+                    toggleBtn.innerHTML = `<i data-lucide="pause" class="w-14 h-14 fill-current"></i>`;
+                    toggleBtn.className = "btn-brutal bg-arcade-red text-white w-32 h-32 rounded-full flex items-center justify-center transform scale-110 border-[6px] border-black";
+                }
+                lucide.createIcons();
+            };
+
+            window.addTime = (s) => { secondsLeft = Math.max(0, secondsLeft + s); totalTime = Math.max(totalTime, secondsLeft); updateUI(); };
+            window.resetTimer = () => { clearInterval(appState.timerInterval); isRunning = false; secondsLeft = 300; totalTime = 300; toggleBtn.innerHTML = `<i data-lucide="play" class="w-14 h-14 fill-current ml-2"></i>`; toggleBtn.className = "btn-brutal bg-arcade-green text-black w-32 h-32 rounded-full flex items-center justify-center transform scale-110 border-[6px] border-black"; updateUI(); lucide.createIcons(); };
+            
+            window.showTimerSettings = () => {
+                showModal(`
+                    <h3 class="text-5xl font-display text-black mb-8 text-center uppercase">Set Timer</h3>
+                    <div class="flex justify-center gap-6 flex-wrap mb-6">
+                        ${[1,2,5,10,15,20].map(m => `<button onclick="window.setCustomTime(${m})" class="btn-brutal w-28 h-28 rounded-2xl bg-white text-black font-display text-5xl hover:bg-arcade-yellow">${m}</button>`).join('')}
+                    </div>
+                `);
+            };
+            window.setCustomTime = (m) => { secondsLeft = m * 60; totalTime = secondsLeft; updateUI(); document.getElementById('modal-container').classList.add('hidden'); };
+            updateUI();
+        }
+
+        // ==========================================
+        // 4. ROSTER
+        // ==========================================
+        function renderClassRoster() {
+            const list = appState.students.map(s => `
+                <div class="bg-white border-[5px] border-black p-4 rounded-[24px] shadow-brutal-sm hover:shadow-brutal hover:-translate-y-2 transition-all group flex flex-col items-center justify-center h-56 relative">
+                    <div class="text-7xl mb-4 transform transition-transform group-hover:scale-125">${getStudentEmoji(s)}</div>
+                    <span class="font-black text-2xl text-black truncate w-full text-center tracking-wide uppercase">${s.name}</span>
+                    <button onclick="window.removeStudent('${s.id}')" class="absolute -top-4 -right-4 w-12 h-12 bg-arcade-red text-white border-4 border-black rounded-full opacity-0 group-hover:opacity-100 shadow-brutal-sm transition-all hover:scale-110 flex items-center justify-center"><i data-lucide="x" class="w-6 h-6 font-black"></i></button>
+                </div>
+            `).join('');
+
+            toolDisplay.innerHTML = `
+                <div class="h-full flex flex-col p-8 animate-pop-in relative bg-striped">
+                    <div class="flex justify-between items-center mb-8 bg-arcade-blue p-6 rounded-[24px] border-[6px] border-black shadow-brutal">
+                        <h2 class="text-5xl font-display text-white flex items-center gap-4 uppercase tracking-wider"><i data-lucide="users" class="w-10 h-10"></i> Class Roster (${appState.students.length})</h2>
+                        <button onclick="window.showAddStudentModal()" class="btn-brutal bg-arcade-green text-black px-8 py-4 rounded-[20px] font-black text-2xl flex items-center gap-3 uppercase">Add Student</button>
+                    </div>
+                    <div class="flex-grow overflow-y-auto pr-4 pb-12 custom-scrollbar"><div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8">${list}</div></div>
+                </div>
+            `;
+            
+            window.showAddStudentModal = () => {
+                showModal(`
+                    <h3 class="text-4xl font-display text-black mb-8 text-center uppercase border-b-[6px] border-black pb-4">Add New Student</h3>
+                    <input type="text" id="new-student-name" class="w-full bg-white border-[6px] border-black rounded-[20px] px-8 py-6 font-black text-4xl mb-8 focus:border-arcade-blue outline-none shadow-inner" placeholder="Student Name" autocomplete="off">
+                    <button onclick="window.addStudent()" class="w-full btn-brutal bg-arcade-yellow text-black py-6 rounded-[20px] font-black text-4xl tracking-widest uppercase">Add to Class</button>
+                `);
+                setTimeout(() => document.getElementById('new-student-name').focus(), 100);
+            };
+
+            window.addStudent = async () => {
+                const name = document.getElementById('new-student-name').value.trim();
+                if(!name) return;
+                document.getElementById('modal-container').classList.add('hidden');
+                if (appState.userId) await addDoc(collection(db, `artifacts/${appId}/users/${appState.userId}/students`), { name, isPresent: true });
+                else { appState.students.push({ id: `loc-${Date.now()}`, name, isPresent: true }); renderClassRoster(); }
+            };
+            
+            window.removeStudent = async (id) => {
+                if(confirm('Remove this student?')) {
+                    if (appState.userId) await deleteDoc(doc(db, `artifacts/${appId}/users/${appState.userId}/students`, id));
+                    else { appState.students = appState.students.filter(s => s.id !== id); renderClassRoster(); }
+                }
+            };
+        }
+
+        // ==========================================
+        // 5. RANDOM PICKER
+        // ==========================================
+        function renderStudentSelector() {
+            const list = appState.students.map(s => `
+                <div class="flex items-center justify-between p-4 mb-3 bg-white rounded-[20px] border-4 border-black shadow-brutal-sm hover:translate-x-2 transition-transform cursor-pointer" onclick="window.toggleAttendance('${s.id}')">
+                    <div class="flex items-center gap-4"><span class="text-4xl">${getStudentEmoji(s)}</span> <span class="font-black text-2xl uppercase tracking-wide ${s.isPresent?'text-black':'text-slate-400 line-through'}">${s.name}</span></div>
+                    <div class="w-16 h-10 rounded-full border-4 border-black relative transition-colors ${s.isPresent ? 'bg-arcade-green' : 'bg-slate-300'}">
+                        <div class="w-6 h-6 bg-white border-2 border-black rounded-full absolute top-[4px] transition-all ${s.isPresent ? 'left-[30px]' : 'left-[4px]'}"></div>
+                    </div>
+                </div>
+            `).join('');
+
+            toolDisplay.innerHTML = `
+                <div class="h-full flex p-6 gap-8 animate-pop-in bg-striped">
+                    <!-- Left: Attendance Panel -->
+                    <div class="w-[380px] flex-shrink-0 flex flex-col bg-white rounded-[32px] border-[6px] border-black shadow-brutal overflow-hidden h-full">
+                        <div class="p-6 bg-arcade-yellow border-b-[6px] border-black text-center font-display text-4xl text-black uppercase tracking-wider z-10">Attendance</div>
+                        <div class="overflow-y-auto flex-grow p-5 custom-scrollbar bg-slate-50">${list}</div>
+                    </div>
+                    
+                    <!-- Right: The Stage -->
+                    <div class="flex-grow flex flex-col items-center justify-center p-4">
+                        <div id="selector-display" class="w-full max-w-5xl h-[500px] bg-white rounded-[40px] border-[8px] border-black shadow-brutal flex flex-col items-center justify-center p-10 mb-10 relative overflow-hidden">
+                            <!-- Background Stripes inside stage -->
+                            <div class="absolute inset-0 bg-striped opacity-50 pointer-events-none"></div>
+                            
+                            <div id="result-content" class="text-center w-full h-full flex flex-col justify-center items-center z-10 bg-white/80 rounded-[32px] border-4 border-black border-dashed">
+                                <i data-lucide="dices" class="w-40 h-40 text-black mb-8 animate-float"></i>
+                                <h2 class="text-7xl font-display text-black uppercase tracking-tight">Ready to Pick!</h2>
+                            </div>
+                        </div>
+                        
+                        <!-- Control Buttons -->
+                        <div class="flex gap-6">
+                            <button onclick="window.pickOne()" class="btn-brutal bg-arcade-purple border-[6px] border-black text-white px-12 py-6 rounded-[24px] font-black text-3xl flex items-center gap-4 uppercase tracking-widest"><i data-lucide="wand-2" class="w-10 h-10"></i> Pick One</button>
+                            <button onclick="window.pickGroups(2)" class="btn-brutal bg-white text-black px-10 py-6 rounded-[24px] font-black text-3xl border-[6px] border-black uppercase hover:bg-arcade-yellow">Pairs</button>
+                            <button onclick="window.pickGroups(4)" class="btn-brutal bg-white text-black px-10 py-6 rounded-[24px] font-black text-3xl border-[6px] border-black uppercase hover:bg-arcade-yellow">Groups of 4</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            window.toggleAttendance = async (id) => {
+                const s = appState.students.find(st => st.id === id);
+                if (appState.userId) await updateDoc(doc(db, `artifacts/${appId}/users/${appState.userId}/students`, s.id), { isPresent: !s.isPresent });
+                else { s.isPresent = !s.isPresent; renderStudentSelector(); }
+            };
+
+            window.pickOne = () => {
+                const pool = appState.students.filter(s => s.isPresent);
+                if(!pool.length) return;
+                const display = document.getElementById('result-content');
+                let i = 0;
+                const timer = setInterval(() => {
+                    const r = pool[Math.floor(Math.random() * pool.length)];
+                    display.innerHTML = `<div class="opacity-80 scale-90"><div class="text-[8rem] mb-4">${getStudentEmoji(r)}</div><h2 class="text-6xl font-black text-slate-400 uppercase">${r.name}</h2></div>`;
+                    if (++i > 15) {
+                        clearInterval(timer);
+                        const win = pool[Math.floor(Math.random() * pool.length)];
+                        display.innerHTML = `<div class="animate-pop-in bg-arcade-yellow w-full h-full rounded-[24px] border-4 border-black flex flex-col items-center justify-center shadow-inner"><div class="text-[12rem] mb-6 animate-bounce-slow drop-shadow-xl">${getStudentEmoji(win)}</div><h2 class="text-[6rem] font-display text-black uppercase tracking-widest leading-none bg-white px-8 py-2 border-4 border-black rounded-full shadow-brutal-sm">${win.name}</h2></div>`;
+                        triggerConfetti();
+                    }
+                }, 100);
+            };
+
+            window.pickGroups = (size) => {
+                const pool = appState.students.filter(s => s.isPresent).sort(() => Math.random() - 0.5);
+                const groups = []; while(pool.length) groups.push(pool.splice(0, size));
+                const html = groups.map((g, i) => `
+                    <div class="bg-white rounded-[24px] p-5 border-[5px] border-black shadow-brutal-sm">
+                        <div class="text-center font-black text-white bg-black rounded-xl py-3 mb-5 uppercase text-xl tracking-widest">Group ${i+1}</div>
+                        <div class="flex flex-col gap-3">${g.map(s => `<div class="bg-slate-100 border-4 border-black p-3 rounded-2xl flex items-center gap-4"><span class="text-4xl">${getStudentEmoji(s)}</span><span class="font-black text-xl text-black uppercase">${s.name}</span></div>`).join('')}</div>
+                    </div>`).join('');
+                document.getElementById('result-content').innerHTML = `<div class="w-full h-full overflow-y-auto custom-scrollbar grid grid-cols-2 xl:grid-cols-3 gap-8 p-6 items-start content-start bg-slate-50">${html}</div>`;
+                triggerConfetti();
+            };
+        }
+
+        // ==========================================
+        // 6. TOURNAMENT BRACKET
+        // ==========================================
+        function renderTournamentBracket() {
+            if (!appState.bracket) {
+                toolDisplay.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full animate-pop-in bg-striped">
+                        <div class="bg-white border-[8px] border-black p-16 rounded-[40px] shadow-brutal flex flex-col items-center">
+                            <div class="p-12 bg-arcade-yellow border-[8px] border-black rounded-full shadow-brutal mb-12 transform -rotate-6"><i data-lucide="trophy" class="w-40 h-40 text-black"></i></div>
+                            <h2 class="text-7xl font-display text-black mb-12 uppercase tracking-tight">Class Tournament</h2>
+                            <button onclick="window.genBracket()" class="btn-brutal bg-arcade-blue border-[6px] border-black text-white px-16 py-8 rounded-[30px] font-black text-4xl flex items-center gap-6 uppercase tracking-widest hover:bg-blue-600"><i data-lucide="git-branch" class="w-12 h-12"></i> Create Bracket</button>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            const renderMatch = (m) => {
+                const p1 = m.players[0], p2 = m.players[1], wId = m.winner?.id;
+                const rP = (p) => {
+                    if(!p) return '<div class="h-16 bg-slate-100 border-4 border-slate-300 rounded-xl mb-2 flex items-center px-4"><span class="text-slate-400 font-black text-xl uppercase">TBD</span></div>';
+                    if(p.id === 'bye') return '<div class="h-16 flex items-center px-4"><span class="text-slate-400 font-black text-xl uppercase">BYE</span></div>';
+                    const isW = wId === p.id, isL = wId && wId !== p.id, canClick = !wId;
+                    return `
+                        <div ${canClick ? `onclick="window.advBracket('${m.id}', '${p.id}')"` : ''} 
+                             class="h-16 flex items-center px-4 rounded-xl border-[4px] mb-2 cursor-pointer transition-all select-none
+                             ${isW ? 'bg-arcade-green border-black text-black font-black shadow-brutal-sm' : isL ? 'bg-slate-100 border-slate-300 text-slate-400 font-bold opacity-60' : 'bg-white border-black hover:bg-arcade-yellow hover:-translate-y-1 text-black font-black hover:shadow-brutal-sm uppercase'}">
+                             <span class="text-4xl mr-4">${getStudentEmoji(p)}</span><span class="truncate text-xl">${p.name}</span>
+                        </div>`;
+                };
+                return `<div class="w-[360px] bg-white p-4 rounded-[24px] border-[5px] border-black shadow-brutal-sm mb-10 relative">
+                           <div class="absolute -left-8 top-1/2 w-8 h-2 bg-black"></div>
+                           ${rP(p1)}<div class="h-2 bg-black my-3 rounded-full"></div>${rP(p2)}
+                        </div>`;
+            };
+
+            const wbMatches = appState.bracket.matches.filter(m => m.type === 'winner' || m.type === 'final');
+            
+            toolDisplay.innerHTML = `
+                <div class="h-full flex flex-col overflow-hidden bg-striped">
+                    <div class="p-6 bg-white border-b-[6px] border-black flex justify-between items-center z-10 shadow-brutal-sm">
+                        <h2 class="font-display text-4xl text-black flex items-center gap-4 uppercase tracking-wide"><i data-lucide="trophy" class="w-10 h-10 text-arcade-yellow fill-current"></i> Tournament</h2>
+                        <button onclick="appState.bracket=null;renderTournamentBracket()" class="text-white font-black btn-brutal px-8 py-4 bg-arcade-red border-[4px] border-black rounded-xl uppercase tracking-widest text-xl">Reset Bracket</button>
+                    </div>
+                    <div class="flex-grow overflow-auto p-12 custom-scrollbar relative z-0">
+                        <div class="flex gap-20 min-w-max">
+                            <div class="flex flex-col gap-6">
+                                <h3 class="font-black text-white bg-black px-8 py-3 rounded-xl w-max tracking-widest text-2xl mb-8 uppercase border-4 border-black">Matches</h3>
+                                ${wbMatches.map(m => renderMatch(m)).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            window.genBracket = () => {
+                const pool = appState.students.filter(s => s.isPresent).sort(()=>Math.random()-0.5);
+                if(pool.length < 2) return alert("Need more students!");
+                const matches = []; let size=2; while(size<pool.length) size*=2;
+                while(pool.length < size) pool.push({id:'bye', name:'BYE'});
+                for(let i=0; i<size/2; i++) matches.push({ id:`M${i+1}`, type:'winner', players:[pool[i], pool[size-1-i]], winner:null });
+                appState.bracket = { matches };
+                matches.forEach(m => { if(m.players[1].id==='bye') window.advBracket(m.id, m.players[0].id, true); });
+                renderTournamentBracket();
+            };
+
+            window.advBracket = (mId, wId, silent=false) => {
+                const m = appState.bracket.matches.find(x => x.id === mId);
+                if(!m || m.winner) return;
+                m.winner = m.players.find(p => p.id === wId);
+                if(!silent) { triggerConfetti(); renderTournamentBracket(); }
+            };
+        }
+
+        // ==========================================
+        // Helpers
+        // ==========================================
+        function triggerConfetti() {
+            const emojis = ['🌟','🎉','🚀','🔥','✨','🍕','🌮','🍩','🍔','🍟','💯','⭐','🤩'];
+            for(let i=0; i<100; i++) {
+                const c = document.createElement('div');
+                c.className = 'fixed z-[100] pointer-events-none drop-shadow-md text-[3rem] md:text-[4rem]';
+                c.innerText = emojis[Math.floor(Math.random()*emojis.length)];
+                c.style.left = (Math.random() * 100) + 'vw'; 
+                c.style.top = '100vh';
+                document.body.appendChild(c);
+                const anim = c.animate([
+                    { transform: `translateY(0) rotate(0deg) scale(0.5)`, opacity: 1 }, 
+                    { transform: `translateY(-${110 + Math.random()*20}vh) rotate(${720 * (Math.random()>0.5?1:-1)}deg) scale(1.5)`, opacity: 0 }
+                ], { duration: 1500 + Math.random()*2000, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' });
+                anim.onfinish = () => c.remove();
+            }
+        }
+
+        function setupFullscreen() {
+            document.getElementById('fullscreen-btn').onclick = () => {
+                if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+                else document.exitFullscreen();
+            };
+        }
+
+        init();
+    </script>
+</body>
+</html>
