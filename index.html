@@ -115,10 +115,20 @@
         /* Massive Crew ID Cards (Draggable) */
         .draggable-item { cursor: grab; } .draggable-item:active { cursor: grabbing; }
         .dragging { opacity: 0.5; transform: scale(0.9); filter: brightness(0.5); }
+        
+        /* TOUCH DRAGGING: Rebuilt for Hardware Acceleration and smooth 60fps */
         .touch-dragging {
-            position: fixed; z-index: 2147483647; pointer-events: none; opacity: 1; 
-            transform: scale(1.1) rotate(2deg); box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            position: fixed; 
+            z-index: 2147483647; 
+            pointer-events: none; 
+            opacity: 1; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
             border-color: #00f2fe !important;
+            will-change: transform; /* Promotes GPU acceleration */
+            margin: 0 !important;
+            top: 0; 
+            left: 0;
+            transform-origin: center;
         }
 
         /* Sci-Fi Portals */
@@ -553,8 +563,12 @@
                 document.getElementById('modal-container').classList.add('hidden'); renderLunchChoice(); 
             };
 
-            // Drag & Drop
+            // Hardware Accelerated Touch Drag & Drop Logic
             let draggedItem = null, sourceCol = null, activeTouchEl = null, originalSourceEl = null;
+            let touchOffsetX = 0, touchOffsetY = 0;
+            let lastTouch = null;
+            let isMoving = false;
+
             const handleDragStart = (e) => { draggedItem = e.target; sourceCol = e.target.dataset.col; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; };
             const handleDragEnd = (e) => { if(e.target) e.target.classList.remove('dragging'); cleanupDrops(); };
             const handleDragOver = (e) => { e.preventDefault(); const zone = e.target.closest('.dropzone'); if(zone) zone.classList.add('dropzone-active'); };
@@ -563,22 +577,85 @@
 
             const handleTouchStart = (e) => {
                 const item = e.target.closest('.draggable-item'); if (!item) return;
-                e.preventDefault(); originalSourceEl = item; sourceCol = item.dataset.col;
-                activeTouchEl = item.cloneNode(true); activeTouchEl.classList.remove('draggable-item'); activeTouchEl.classList.add('touch-dragging');
-                activeTouchEl.style.width = item.offsetWidth + 'px'; document.body.appendChild(activeTouchEl); item.style.opacity = '0.2';
+                e.preventDefault(); // Prevents scroll conflicts on mobile
+                originalSourceEl = item; 
+                sourceCol = item.dataset.col;
+
+                // Capture exact grab coordinates
+                const rect = item.getBoundingClientRect();
+                touchOffsetX = e.touches[0].clientX - rect.left;
+                touchOffsetY = e.touches[0].clientY - rect.top;
+
+                activeTouchEl = item.cloneNode(true); 
+                activeTouchEl.classList.remove('draggable-item'); 
+                activeTouchEl.classList.add('touch-dragging');
+                
+                // Explicitly copy dimensions so the clone doesn't collapse
+                activeTouchEl.style.width = rect.width + 'px'; 
+                activeTouchEl.style.height = rect.height + 'px';
+
+                document.body.appendChild(activeTouchEl); 
+                item.style.opacity = '0.2';
+                
                 moveTouchClone(e.touches[0]);
             };
-            const moveTouchClone = (touch) => { if(!activeTouchEl) return; activeTouchEl.style.left = (touch.clientX - (activeTouchEl.offsetWidth/2)) + 'px'; activeTouchEl.style.top = (touch.clientY - (activeTouchEl.offsetHeight/2) - 50) + 'px'; };
-            const handleTouchMove = (e) => {
-                if (!activeTouchEl) return; e.preventDefault(); moveTouchClone(e.touches[0]);
-                document.querySelectorAll('.dropzone').forEach(d => d.classList.remove('dropzone-active'));
-                const elemBelow = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-                if(elemBelow) { const zone = elemBelow.closest('.dropzone'); if(zone) zone.classList.add('dropzone-active'); }
+
+            const moveTouchClone = (touch) => { 
+                if(!activeTouchEl) return; 
+                // Hardware accelerated movement (translate3d) instead of left/top CSS.
+                // Shifted slightly up (-40px) so the user's finger doesn't block the student's name
+                const x = touch.clientX - touchOffsetX;
+                const y = touch.clientY - touchOffsetY - 40;
+                activeTouchEl.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.05) rotate(2deg)`;
             };
+
+            const handleTouchMove = (e) => {
+                if (!activeTouchEl) return; 
+                e.preventDefault(); 
+                lastTouch = e.touches[0];
+
+                // Use requestAnimationFrame to optimize checking for the drop zones
+                if (!isMoving) {
+                    isMoving = true;
+                    requestAnimationFrame(() => {
+                        if (!activeTouchEl || !lastTouch) { isMoving = false; return; }
+                        
+                        moveTouchClone(lastTouch);
+                        
+                        document.querySelectorAll('.dropzone').forEach(d => d.classList.remove('dropzone-active'));
+                        const elemBelow = document.elementFromPoint(lastTouch.clientX, lastTouch.clientY);
+                        if(elemBelow) { 
+                            const zone = elemBelow.closest('.dropzone'); 
+                            if(zone) zone.classList.add('dropzone-active'); 
+                        }
+                        isMoving = false;
+                    });
+                }
+            };
+
             const handleTouchEnd = (e) => {
-                if (!activeTouchEl) return; e.preventDefault(); const touch = e.changedTouches[0]; const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-                activeTouchEl.remove(); activeTouchEl = null; if(originalSourceEl) originalSourceEl.style.opacity = '1'; cleanupDrops();
-                if(elemBelow && originalSourceEl) { const zone = elemBelow.closest('.dropzone'); if(zone) { const tId = zone.id.replace('drop-', ''); if(tId !== sourceCol) performMove(sourceCol, tId, originalSourceEl.dataset.id, zone); } }
+                if (!activeTouchEl) return; 
+                e.preventDefault(); 
+                
+                const touch = e.changedTouches[0]; 
+                const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                
+                // Cleanup cloned element
+                activeTouchEl.remove(); 
+                activeTouchEl = null; 
+                lastTouch = null; 
+                
+                if(originalSourceEl) originalSourceEl.style.opacity = '1'; 
+                cleanupDrops();
+                
+                // Handle the Drop logic
+                if(elemBelow && originalSourceEl) { 
+                    const zone = elemBelow.closest('.dropzone'); 
+                    if(zone) { 
+                        const tId = zone.id.replace('drop-', ''); 
+                        if(tId !== sourceCol) performMove(sourceCol, tId, originalSourceEl.dataset.id, zone); 
+                    } 
+                }
             };
 
             const cleanupDrops = () => document.querySelectorAll('.dropzone').forEach(d => { d.classList.remove('dropzone-active', 'warping'); });
