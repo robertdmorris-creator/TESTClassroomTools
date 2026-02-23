@@ -428,8 +428,8 @@
 
             // MASSIVE Crew ID Cards (because 8 students)
             const makeDraggable = (student, colId) => `
-                <div id="st-${student.id}" draggable="true" data-id="${student.id}" data-col="${colId}" style="touch-action: none;"
-                     class="draggable-item bg-space-card border-2 border-slate-600 px-4 py-3 rounded-2xl cursor-grab active:cursor-grabbing hover:-translate-y-2 hover:border-neon-blue transition-all animate-pop-in select-none flex items-center gap-4 w-full max-w-[280px] shadow-lg hover:shadow-neon-blue">
+                <div id="st-${student.id}" data-id="${student.id}" data-col="${colId}" style="touch-action: none; user-select: none; -webkit-user-select: none;"
+                     class="draggable-item bg-space-card border-2 border-slate-600 px-4 py-3 rounded-2xl cursor-grab active:cursor-grabbing hover:-translate-y-2 hover:border-neon-blue transition-all animate-pop-in flex items-center gap-4 w-full max-w-[280px] shadow-lg hover:shadow-neon-blue">
                     <div class="w-14 h-14 bg-black/40 border border-slate-500 rounded-full flex items-center justify-center text-4xl pointer-events-none drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">${getStudentEmoji(student)}</div>
                     <div class="font-display text-2xl text-white pointer-events-none truncate tracking-wide">${student.name}</div>
                 </div>`;
@@ -563,99 +563,107 @@
                 document.getElementById('modal-container').classList.add('hidden'); renderLunchChoice(); 
             };
 
-            // Hardware Accelerated Touch Drag & Drop Logic
-            let draggedItem = null, sourceCol = null, activeTouchEl = null, originalSourceEl = null;
-            let touchOffsetX = 0, touchOffsetY = 0;
-            let lastTouch = null;
-            let isMoving = false;
+            // Unified Pointer Events System (Fixes Smartboard Ghosting & Lag)
+            let activeDrag = null;
 
-            const handleDragStart = (e) => { draggedItem = e.target; sourceCol = e.target.dataset.col; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; };
-            const handleDragEnd = (e) => { if(e.target) e.target.classList.remove('dragging'); cleanupDrops(); };
-            const handleDragOver = (e) => { e.preventDefault(); const zone = e.target.closest('.dropzone'); if(zone) zone.classList.add('dropzone-active'); };
-            const handleDragLeave = (e) => { const zone = e.target.closest('.dropzone'); if(zone) zone.classList.remove('dropzone-active'); };
-            const handleDrop = (e) => { e.preventDefault(); const zone = e.target.closest('.dropzone'); if (!zone || !draggedItem) return; const tId = zone.id.replace('drop-', ''); if (tId !== sourceCol) performMove(sourceCol, tId, draggedItem.dataset.id, zone); };
-
-            const handleTouchStart = (e) => {
-                const item = e.target.closest('.draggable-item'); if (!item) return;
-                e.preventDefault(); // Prevents scroll conflicts on mobile
-                originalSourceEl = item; 
-                sourceCol = item.dataset.col;
-
-                // Capture exact grab coordinates
-                const rect = item.getBoundingClientRect();
-                touchOffsetX = e.touches[0].clientX - rect.left;
-                touchOffsetY = e.touches[0].clientY - rect.top;
-
-                activeTouchEl = item.cloneNode(true); 
-                activeTouchEl.classList.remove('draggable-item'); 
-                activeTouchEl.classList.add('touch-dragging');
+            const handlePointerDown = (e) => {
+                // Ignore right clicks
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
                 
-                // Explicitly copy dimensions so the clone doesn't collapse
-                activeTouchEl.style.width = rect.width + 'px'; 
-                activeTouchEl.style.height = rect.height + 'px';
+                const item = e.target.closest('.draggable-item');
+                if (!item) return;
+                
+                e.preventDefault(); 
+                item.setPointerCapture(e.pointerId);
 
-                document.body.appendChild(activeTouchEl); 
+                const rect = item.getBoundingClientRect();
+                
+                activeDrag = {
+                    item: item,
+                    sourceCol: item.dataset.col,
+                    id: item.dataset.id,
+                    offsetX: e.clientX - rect.left,
+                    offsetY: e.clientY - rect.top,
+                    clone: item.cloneNode(true),
+                    isMoving: false
+                };
+
+                // Prepare hardware-accelerated clone
+                activeDrag.clone.classList.remove('draggable-item'); 
+                activeDrag.clone.classList.add('touch-dragging');
+                activeDrag.clone.style.width = rect.width + 'px'; 
+                activeDrag.clone.style.height = rect.height + 'px';
+
+                document.body.appendChild(activeDrag.clone); 
                 item.style.opacity = '0.2';
                 
-                moveTouchClone(e.touches[0]);
+                moveClone(e.clientX, e.clientY);
+                
+                item.addEventListener('pointermove', handlePointerMove);
+                item.addEventListener('pointerup', handlePointerUp);
+                item.addEventListener('pointercancel', handlePointerUp);
             };
 
-            const moveTouchClone = (touch) => { 
-                if(!activeTouchEl) return; 
-                // Hardware accelerated movement (translate3d) instead of left/top CSS.
-                // Shifted slightly up (-40px) so the user's finger doesn't block the student's name
-                const x = touch.clientX - touchOffsetX;
-                const y = touch.clientY - touchOffsetY - 40;
-                activeTouchEl.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.05) rotate(2deg)`;
+            const moveClone = (x, y) => { 
+                if(!activeDrag) return; 
+                // Exact grab position, shifted up 30px so the finger doesn't block the name
+                const px = x - activeDrag.offsetX;
+                const py = y - activeDrag.offsetY - 30;
+                activeDrag.clone.style.transform = `translate3d(${px}px, ${py}px, 0) scale(1.05) rotate(2deg)`;
             };
 
-            const handleTouchMove = (e) => {
-                if (!activeTouchEl) return; 
+            const handlePointerMove = (e) => {
+                if (!activeDrag) return; 
                 e.preventDefault(); 
-                lastTouch = e.touches[0];
 
-                // Use requestAnimationFrame to optimize checking for the drop zones
-                if (!isMoving) {
-                    isMoving = true;
+                if (!activeDrag.isMoving) {
+                    activeDrag.isMoving = true;
                     requestAnimationFrame(() => {
-                        if (!activeTouchEl || !lastTouch) { isMoving = false; return; }
+                        if (!activeDrag) return;
                         
-                        moveTouchClone(lastTouch);
+                        moveClone(e.clientX, e.clientY);
                         
                         document.querySelectorAll('.dropzone').forEach(d => d.classList.remove('dropzone-active'));
-                        const elemBelow = document.elementFromPoint(lastTouch.clientX, lastTouch.clientY);
+                        
+                        // Because the clone has pointer-events: none, this perfectly selects the portal underneath
+                        const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
                         if(elemBelow) { 
                             const zone = elemBelow.closest('.dropzone'); 
                             if(zone) zone.classList.add('dropzone-active'); 
                         }
-                        isMoving = false;
+                        activeDrag.isMoving = false;
                     });
                 }
             };
 
-            const handleTouchEnd = (e) => {
-                if (!activeTouchEl) return; 
+            const handlePointerUp = (e) => {
+                if (!activeDrag) return; 
                 e.preventDefault(); 
                 
-                const touch = e.changedTouches[0]; 
-                const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                activeDrag.item.releasePointerCapture(e.pointerId);
+
+                // Find the target portal
+                const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+                const zone = elemBelow ? elemBelow.closest('.dropzone') : null;
                 
-                // Cleanup cloned element
-                activeTouchEl.remove(); 
-                activeTouchEl = null; 
-                lastTouch = null; 
+                // Erase the clone
+                activeDrag.clone.remove(); 
                 
-                if(originalSourceEl) originalSourceEl.style.opacity = '1'; 
+                if(activeDrag.item) {
+                    activeDrag.item.style.opacity = '1';
+                    activeDrag.item.removeEventListener('pointermove', handlePointerMove);
+                    activeDrag.item.removeEventListener('pointerup', handlePointerUp);
+                    activeDrag.item.removeEventListener('pointercancel', handlePointerUp);
+                }
+                
                 cleanupDrops();
                 
-                // Handle the Drop logic
-                if(elemBelow && originalSourceEl) { 
-                    const zone = elemBelow.closest('.dropzone'); 
-                    if(zone) { 
-                        const tId = zone.id.replace('drop-', ''); 
-                        if(tId !== sourceCol) performMove(sourceCol, tId, originalSourceEl.dataset.id, zone); 
-                    } 
+                // Perform Data Swap
+                if(zone) { 
+                    const tId = zone.id.replace('drop-', ''); 
+                    if(tId !== activeDrag.sourceCol) performMove(activeDrag.sourceCol, tId, activeDrag.id, zone); 
                 }
+                activeDrag = null; 
             };
 
             const cleanupDrops = () => document.querySelectorAll('.dropzone').forEach(d => { d.classList.remove('dropzone-active', 'warping'); });
@@ -671,8 +679,10 @@
                 }
             };
 
-            toolDisplay.querySelectorAll('.draggable-item').forEach(el => { el.addEventListener('dragstart', handleDragStart); el.addEventListener('dragend', handleDragEnd); el.addEventListener('touchstart', handleTouchStart, {passive: false}); el.addEventListener('touchmove', handleTouchMove, {passive: false}); el.addEventListener('touchend', handleTouchEnd); });
-            toolDisplay.querySelectorAll('.dropzone').forEach(el => { el.addEventListener('dragover', handleDragOver); el.addEventListener('dragleave', handleDragLeave); el.addEventListener('drop', handleDrop); });
+            // Unified listeners (no separate mouse vs touch vs native drag listeners needed!)
+            toolDisplay.querySelectorAll('.draggable-item').forEach(el => { 
+                el.addEventListener('pointerdown', handlePointerDown); 
+            });
 
             document.getElementById('reset-lunch').onclick = () => { appState.lunchColumns = null; renderLunchChoice(); };
         }
