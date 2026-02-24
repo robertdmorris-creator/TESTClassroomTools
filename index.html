@@ -391,12 +391,23 @@
             }
 
             if (!appState.lunchColumns) {
-                appState.lunchColumns = { unselected: [...appState.students.filter(s => s.isPresent)], choice1: [], choice2: [], choice3: [] };
+                appState.lunchColumns = { 
+                    unselected: [...appState.students.filter(s => s.isPresent && s.name.toLowerCase() !== 'miracle')], 
+                    choice1: [], 
+                    choice2: [], 
+                    choice3: [] 
+                };
             } else {
                 const allIds = new Set(appState.students.map(s => s.id));
-                ['unselected', 'choice1', 'choice2', 'choice3'].forEach(k => appState.lunchColumns[k] = appState.lunchColumns[k].filter(s => allIds.has(s.id)));
+                ['unselected', 'choice1', 'choice2', 'choice3'].forEach(k => {
+                    appState.lunchColumns[k] = appState.lunchColumns[k].filter(s => allIds.has(s.id) && s.name.toLowerCase() !== 'miracle');
+                });
                 const current = new Set([...appState.lunchColumns.unselected, ...appState.lunchColumns.choice1, ...appState.lunchColumns.choice2, ...appState.lunchColumns.choice3].map(s => s.id));
-                appState.students.forEach(s => { if (s.isPresent && !current.has(s.id)) appState.lunchColumns.unselected.push(s); });
+                appState.students.forEach(s => { 
+                    if (s.isPresent && s.name.toLowerCase() !== 'miracle' && !current.has(s.id)) {
+                        appState.lunchColumns.unselected.push(s); 
+                    }
+                });
             }
 
             const cols = appState.lunchColumns;
