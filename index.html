@@ -18,7 +18,7 @@
                     },
                     colors: {
                         paper: '#ffffff',
-                        board: '#fffbeb', /* Warm Amber-50 */
+                        board: '#fffbeb',
                         crayon: {
                             blue: '#3b82f6',   
                             yellow: '#eab308',
@@ -27,12 +27,12 @@
                             purple: '#a855f7',
                             orange: '#f97316',
                             pink: '#ec4899',
-                            dark: '#1e293b' // Slate 800 for outlines
+                            dark: '#1e293b'
                         },
                         monster: {
-                            a: '#3b82f6', // Bright Blue
-                            b: '#22c55e', // Bright Green
-                            c: '#a855f7'  // Bright Purple
+                            a: '#3b82f6',
+                            b: '#22c55e',
+                            c: '#a855f7'
                         }
                     },
                     boxShadow: {
@@ -145,7 +145,7 @@
 
             <nav id="tool-nav" class="flex gap-4 overflow-x-auto flex-grow justify-start md:justify-center px-2 py-1 no-scrollbar"></nav>
 
-            <div id="live-clock" class="hidden md:flex items-center justify-center px-4 py-2 bg-slate-800 text-white rounded-xl font-display text-2xl border-4 border-slate-900 shadow-inner tracking-wide">
+            <div id="live-clock" class="hidden md:flex items-center justify-center px-6 py-3 bg-slate-800 text-white rounded-2xl font-display text-4xl border-4 border-slate-900 shadow-inner tracking-wide">
                 --:--
             </div>
 
@@ -198,6 +198,10 @@
         ];
         
         const SCHOOL_MENU = {
+            '2026-02-24': { c1: 'French Bread Pizza', c2: 'Chicken Sandwich', sides: ['Seasoned Carrots', 'Lettuce/Tomato', 'Fruit'] },
+            '2026-02-25': { c1: 'Pasta w/meatsauce', c2: 'Grilled Cheese', sides: ['Steamed Broccoli', 'Seasoned Corn', 'Fruit'] },
+            '2026-02-26': { c1: 'Chicken Biscuit', c2: 'Sausage Biscuit', sides: ['Sweet Potato', 'Smiles', 'Fruit'] },
+            '2026-02-27': { c1: 'Hotdog', c2: 'Hamburger', sides: ['Baked Beans', 'Coleslaw', 'Fruit'] },
             '2026-03-02': { c1: 'Beefy Nachos', c2: 'Spicy Chicken Sandwich', sides: ['Refried Beans', 'Lettuce/Tomato', 'Assorted Fruit'] },
             '2026-03-03': { c1: 'Cheese Pizza', c2: 'Steak Sticks w/roll', sides: ['Mashed Potatoes', 'Celery & Carrot Sticks w/dip', 'Assorted Fruit'] },
             '2026-03-04': { c1: 'Cheeseburger', c2: 'Deli Ham & Cheese Sub', sides: ['French Fries', 'Lettuce/Tomato', 'Assorted Fruit'] },
@@ -988,7 +992,7 @@
             }
         }
         setInterval(startClock, 1000);
-        startClock(); // Execute immediately so we don't wait 1 second for the clock to appear
+        startClock(); 
 
         init();
     </script>
